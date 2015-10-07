@@ -175,6 +175,7 @@ angular.module('ngAudio', [])
         this.id = id;
         this.safeId = id.replace('/', '|');
         this.loop = 0;
+        this.events = {};
 
         this.unbind = function() {
             $observeProperties = false;
@@ -225,6 +226,39 @@ angular.module('ngAudio', [])
             if (audio && audio.duration) {
                 audio.currentTime = currentTime;
             }
+        };
+
+        this.on = function(evtName, fn) {
+            if(typeof evtName !== "string") {
+                throw new TypeError("Event name must be string");
+            }
+            if(typeof fn !== "function") {
+                throw new TypeError('Event callback must be a function');
+            }
+            if(!this.events[evtName]) {
+                this.events[evtName] = [];  
+            }
+            this.events[evtName].push(fn);
+            return fn;
+        };
+
+        this.trigger = function(evtName) {
+            var self = this;
+            if(typeof evtName !== "string") {
+                throw new TypeError("Event name must be string");
+            }
+            return this.events[evtName].map(function(cb) {
+                return cb.call(self);
+            });
+        };
+
+        this.off = function(evtName, fn) {
+            if(typeof evtName !== "string") {
+                throw new TypeError("Event name must be string");
+            }
+            this.events[evtName] = this.events[evtName].filter(function(fnInArr) {
+                return fn !== fnInArr;
+            });
         };
 
         this.destroy = $destroy;
@@ -333,6 +367,7 @@ angular.module('ngAudio', [])
 
                 if ($willPlay) {
                     audio.play();
+                    audioObject.trigger('play')
                     $willPlay = false;
                 }
 
